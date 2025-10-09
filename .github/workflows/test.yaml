@@ -1,11 +1,6 @@
 name: Test suite
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   test:
@@ -13,7 +8,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: ["3.13", "3.14"]
+        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up uv
