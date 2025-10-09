@@ -1,6 +1,6 @@
 # Python DDD & Onion-Architecture Example and Techniques
 
-[![A workflow to run test](https://github.com/iktakahiro/dddpy/actions/workflows/test.yml/badge.svg)](https://github.com/iktakahiro/dddpy/actions/workflows/test.yml)
+[![A workflow to run test](https://github.com/iktakahiro/dddpy/actions/workflows/test.yaml/badge.svg)](https://github.com/iktakahiro/dddpy/actions/workflows/test.yaml)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/iktakahiro/dddpy)
 
 [English](README.md) | 日本語
@@ -19,6 +19,11 @@
   * [SQLite](https://www.sqlite.org/index.html)
 * [uv](https://github.com/astral-sh/uv)
 * [Docker](https://www.docker.com/)
+
+## 前提条件
+
+* Python 3.13 以上
+* [uv](https://github.com/astral-sh/uv) - Pythonパッケージインストーラー＆リゾルバー
 
 ## プロジェクトのセットアップ
 
@@ -199,6 +204,8 @@ class TodoRepository(ABC):
 3. 外部サービスとの統合
 4. 依存性注入（DI）の設定
 
+この層は、ドメイン層で定義された抽象化の具象実装を提供し、関心の明確な分離を維持しながら、アプリケーションが外部リソースと相互作用できるようにします。
+
 #### 1. リポジトリの実装
 
 リポジトリの実装は、次のように行います：
@@ -291,6 +298,41 @@ class TodoDTO(Base):
 
 データベースから取得した `TodoDTO` オブジェクト（SQLAlchemyに依存）を、ドメイン層の `Todo` エンティティに変換してからユースケース層に返すことで、ユースケース層がインフラストラクチャ層の詳細に依存することを防ぎます。これにより、リポジトリインターフェースで定義された戻り値の型（`Todo` エンティティ）との整合性も保たれます。
 
+#### 3. 依存性注入（Dependency Injection）
+
+このプロジェクトでは、FastAPIの依存性注入システムを使用してレイヤー間の依存関係を管理しています。DI設定は `infrastructure/di/injection.py` モジュールに集約されています：
+
+```python
+def get_session() -> Iterator[Session]:
+    """リクエスト処理用の管理されたSQLAlchemyセッションを提供します。"""
+    session: Session = SessionLocal()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+def get_todo_repository(session: Session = Depends(get_session)) -> TodoRepository:
+    """現在のセッションに紐づくリポジトリインスタンスを提供します。"""
+    return new_todo_repository(session)
+
+def get_create_todo_usecase(
+    todo_repository: TodoRepository = Depends(get_todo_repository),
+) -> CreateTodoUseCase:
+    """リポジトリが注入されたcreate-todoユースケースを提供します。"""
+    return new_create_todo_usecase(todo_repository)
+```
+
+このアプローチの主な利点：
+
+* **ライフサイクル管理**: データベースセッションが自動的に管理される（commit/rollback/close）
+* **テスタビリティ**: 依存関係をテストで簡単にモック化または置き換えることができる
+* **疎結合**: プレゼンテーション層は実装ではなくユースケースインターフェースにのみ依存する
+* **単一責任**: 各依存性プロバイダーは明確な単一の目的を持つ
+
 ### ユースケース層
 
 ユースケース層には、アプリケーション固有のビジネスルールが含まれています。主に以下の要素で構成されています：
@@ -372,10 +414,21 @@ class StartTodoUseCaseImpl(StartTodoUseCase):
 
 ## 起動方法
 
-1. VSCodeでこのリポジトリをクローンして開きます
-2. リモートコンテナを起動します
-3. Dockerコンテナのターミナルで`make dev`を実行します
-4. APIドキュメントにアクセスします：[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+### オプション1: ローカル開発
+
+1. Python 3.13以上とuvがインストールされていることを確認
+2. このリポジトリをクローン
+3. `make install`を実行して依存関係をインストール
+4. `make dev`を実行して開発サーバーを起動
+5. APIドキュメントにアクセス：[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+### オプション2: Dev Container（VSCode）
+
+1. VSCodeでこのリポジトリをクローンして開く
+2. [Dev Containers拡張機能](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)をインストール
+3. コマンドパレット（Cmd/Ctrl+Shift+P）を開き「Dev Containers: Reopen in Container」を選択
+4. コンテナのビルドが完了したら、ターミナルで`make dev`を実行
+5. APIドキュメントにアクセス：[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ![OpenAPI Doc](./screenshots/openapi_doc.png)
 
@@ -420,10 +473,33 @@ curl --location --request GET 'localhost:8000/todos'
         "title": "Implement DDD architecture",
         "description": "Create a sample application using DDD principles",
         "status": "not_started",
-    "created_at": 1614006055213,
-    "updated_at": 1614006055213
+        "created_at": 1614006055213,
+        "updated_at": 1614006055213
     }
 ]
+```
+
+* Todoを開始する：
+
+```bash
+curl --location --request PATCH 'localhost:8000/todos/550e8400-e29b-41d4-a716-446655440000/start'
+```
+
+* Todoを完了する：
+
+```bash
+curl --location --request PATCH 'localhost:8000/todos/550e8400-e29b-41d4-a716-446655440000/complete'
+```
+
+* Todoを更新する：
+
+```bash
+curl --location --request PUT 'localhost:8000/todos/550e8400-e29b-41d4-a716-446655440000' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "title": "更新されたタイトル",
+    "description": "更新された説明"
+}'
 ```
 
 ## 開発
@@ -434,6 +510,8 @@ curl --location --request GET 'localhost:8000/todos'
 make test
 ```
 
+このコマンドは、mypyによる型チェックとpytestによるユニットテストの両方を実行します。
+
 ### コードの品質について
 
 このプロジェクトでは、コード品質を維持するために以下のツールを使用しています：
@@ -442,9 +520,17 @@ make test
 * [ruff](https://github.com/astral-sh/ruff) - Linter と Formatter
 * [pytest](https://docs.pytest.org/) - テスト
 
+### コードフォーマット
+
+ruffを使用してコードをフォーマットします：
+
+```bash
+make format
+```
+
 ### Docker開発環境
 
-このプロジェクトには、Dockerベースの開発環境用の`.devcontainer`設定が含まれています。これにより、異なるマシン間で一貫した開発環境を確保できます。
+このプロジェクトには、Dockerベースの開発環境用の`.devcontainer`設定が含まれています。これにより、異なるマシン間で一貫した開発環境を確保できます。セットアップ手順については[起動方法](#起動方法)を参照してください。
 
 ## ライセンス
 

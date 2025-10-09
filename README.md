@@ -1,6 +1,6 @@
 # Python DDD & Onion-Architecture Example and Techniques
 
-[![A workflow to run test](https://github.com/iktakahiro/dddpy/actions/workflows/test.yml/badge.svg)](https://github.com/iktakahiro/dddpy/actions/workflows/test.yml)
+[![A workflow to run test](https://github.com/iktakahiro/dddpy/actions/workflows/test.yaml/badge.svg)](https://github.com/iktakahiro/dddpy/actions/workflows/test.yaml)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/iktakahiro/dddpy)
 
 English | [日本語](README.ja_JP.md)
@@ -19,6 +19,11 @@ English | [日本語](README.ja_JP.md)
   * [SQLite](https://www.sqlite.org/index.html)
 * [uv](https://github.com/astral-sh/uv)
 * [Docker](https://www.docker.com/)
+
+## Prerequisites
+
+* Python 3.13 or higher
+* [uv](https://github.com/astral-sh/uv) - Python package installer and resolver
 
 ## Project Setup
 
@@ -204,6 +209,8 @@ The infrastructure layer implements the interfaces defined in the domain layer. 
 3. External service integrations
 4. Dependency Injection (DI) setup
 
+This layer provides concrete implementations of the abstractions defined in the domain layer, enabling the application to interact with external resources while maintaining clean separation of concerns.
+
 #### 1. Repository Implementations
 
 The repository implementation is done as follows:
@@ -296,6 +303,41 @@ class TodoDTO(Base):
 
 By converting `TodoDTO` objects (dependent on SQLAlchemy) retrieved from the database into the domain layer's `Todo` entity before returning them to the use case layer, we prevent the use case layer from depending on infrastructure layer details. This also maintains consistency with the return type (`Todo` entity) defined in the repository interface.
 
+#### 3. Dependency Injection
+
+This project uses FastAPI's dependency injection system to manage dependencies across layers. The DI configuration is centralized in the `infrastructure/di/injection.py` module:
+
+```python
+def get_session() -> Iterator[Session]:
+    """Yield a managed SQLAlchemy session for request handling."""
+    session: Session = SessionLocal()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+def get_todo_repository(session: Session = Depends(get_session)) -> TodoRepository:
+    """Provide a repository instance bound to the current session."""
+    return new_todo_repository(session)
+
+def get_create_todo_usecase(
+    todo_repository: TodoRepository = Depends(get_todo_repository),
+) -> CreateTodoUseCase:
+    """Provide the create-todo use case with injected repository."""
+    return new_create_todo_usecase(todo_repository)
+```
+
+Key benefits of this approach:
+
+* **Lifecycle Management**: Database sessions are automatically managed (commit/rollback/close)
+* **Testability**: Dependencies can be easily mocked or replaced in tests
+* **Loose Coupling**: Presentation layer depends only on use case interfaces, not implementations
+* **Single Responsibility**: Each dependency provider has one clear purpose
+
 ### Usecase Layer
 
 The usecase layer contains the application-specific business rules. It includes:
@@ -378,12 +420,23 @@ The presentation layer handles HTTP requests and responses. It includes:
 
 The handlers are organized under the `presentation/api` directory, which represents the API layer of the application. Each domain (like `todo`) has its own controller, schema, and error message definitions.
 
-## How to Work
+## How to Use
 
-1. Clone and open this repository using VSCode.
-2. Run Remote-Container.
-3. Run `make dev` in the Docker container terminal.
-4. Access the API documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+### Option 1: Local Development
+
+1. Ensure Python 3.13+ and uv are installed
+2. Clone this repository
+3. Run `make install` to install dependencies
+4. Run `make dev` to start the development server
+5. Access the API documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+### Option 2: Dev Container (VSCode)
+
+1. Clone and open this repository using VSCode
+2. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+3. Open the command palette (Cmd/Ctrl+Shift+P) and select "Dev Containers: Reopen in Container"
+4. Once the container is built, run `make dev` in the terminal
+5. Access the API documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ![OpenAPI Doc](./screenshots/openapi_doc.png)
 
@@ -434,6 +487,29 @@ curl --location --request GET 'localhost:8000/todos'
 ]
 ```
 
+* Start a todo:
+
+```bash
+curl --location --request PATCH 'localhost:8000/todos/550e8400-e29b-41d4-a716-446655440000/start'
+```
+
+* Complete a todo:
+
+```bash
+curl --location --request PATCH 'localhost:8000/todos/550e8400-e29b-41d4-a716-446655440000/complete'
+```
+
+* Update a todo:
+
+```bash
+curl --location --request PUT 'localhost:8000/todos/550e8400-e29b-41d4-a716-446655440000' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "title": "Updated title",
+    "description": "Updated description"
+}'
+```
+
 ## Development
 
 ### Running Tests
@@ -442,17 +518,27 @@ curl --location --request GET 'localhost:8000/todos'
 make test
 ```
 
+This command runs both type checking with mypy and unit tests with pytest.
+
 ### Code Quality
 
 This project uses several tools to maintain code quality:
 
 * [mypy](http://mypy-lang.org/) for static type checking
-* [ruff](https://github.com/astral-sh/ruff) for linter & formatter
+* [ruff](https://github.com/astral-sh/ruff) for linting & formatting
 * [pytest](https://docs.pytest.org/) for testing
+
+### Code Formatting
+
+Format your code using ruff:
+
+```bash
+make format
+```
 
 ### Docker Development
 
-The project includes a `.devcontainer` configuration for Docker-based development. This ensures a consistent development environment across different machines.
+The project includes a `.devcontainer` configuration for Docker-based development. This ensures a consistent development environment across different machines. See [How to Use](#how-to-use) for setup instructions.
 
 ## License
 
