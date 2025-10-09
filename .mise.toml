@@ -1,0 +1,26 @@
+[tools]
+python = "3.14"
+ruff = "latest"
+uv = "latest"
+
+[tasks.sync]
+run = "uv sync"
+
+[tasks.venv]
+run = "uv venv .venv"
+
+[tasks.install]
+depends = ["venv"]
+run = "uv pip install -e '.[dev]'"
+
+[tasks.test]
+depends = ["install"]
+run = ".venv/bin/mypy --ignore-missing-imports main.py ./dddpy/ && .venv/bin/pytest -vv"
+
+[tasks.format]
+depends = ["install"]
+run = ".venv/bin/ruff format"
+
+[tasks.dev]
+depends = ["install"]
+run = "uv run fastapi dev"
