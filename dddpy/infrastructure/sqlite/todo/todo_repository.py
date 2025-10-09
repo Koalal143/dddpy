@@ -13,14 +13,25 @@ from dddpy.infrastructure.sqlite.todo import TodoDTO
 
 
 class TodoRepositoryImpl(TodoRepository):
-    """SQLite implementation of Todo repository interface."""
+    """Persist todos using SQLAlchemy and a SQLite backend."""
 
     def __init__(self, session: Session):
-        """Initialize repository with SQLAlchemy session."""
+        """Store the SQLAlchemy session dependency.
+
+        Args:
+            session: Active SQLAlchemy session bound to the SQLite engine.
+        """
         self.session = session
 
     def find_by_id(self, todo_id: TodoId) -> Optional[Todo]:
-        """Find a Todo by its ID."""
+        """Return a todo matching the provided identifier.
+
+        Args:
+            todo_id: Identifier of the todo to fetch.
+
+        Returns:
+            Optional[Todo]: The matching todo when found; otherwise None.
+        """
         try:
             row = self.session.query(TodoDTO).filter_by(id=todo_id.value).one()
         except NoResultFound:
@@ -29,7 +40,11 @@ class TodoRepositoryImpl(TodoRepository):
         return row.to_entity()
 
     def find_all(self) -> List[Todo]:
-        """Retrieve all Todo items."""
+        """Return todos ordered by creation date with an upper limit.
+
+        Returns:
+            List[Todo]: Up to 20 todos sorted by newest first.
+        """
         rows = (
             self.session.query(TodoDTO)
             .order_by(desc(TodoDTO.created_at))
@@ -39,7 +54,11 @@ class TodoRepositoryImpl(TodoRepository):
         return [todo_dto.to_entity() for todo_dto in rows]
 
     def save(self, todo: Todo) -> None:
-        """Save a new Todo item."""
+        """Persist new or updated todo data.
+
+        Args:
+            todo: Todo entity to create or update.
+        """
         todo_dto = TodoDTO.from_entity(todo)
         try:
             existing_todo = (
@@ -56,10 +75,21 @@ class TodoRepositoryImpl(TodoRepository):
             existing_todo.completed_at = todo_dto.completed_at
 
     def delete(self, todo_id: TodoId) -> None:
-        """Delete a Todo item by its ID."""
+        """Remove a todo by its identifier.
+
+        Args:
+            todo_id: Identifier of the todo to delete.
+        """
         self.session.query(TodoDTO).filter_by(id=todo_id.value).delete()
 
 
 def new_todo_repository(session: Session) -> TodoRepository:
-    """Create a new TodoRepository instance."""
+    """Instantiate a SQLite-backed todo repository.
+
+    Args:
+        session: Active SQLAlchemy session bound to the SQLite engine.
+
+    Returns:
+        TodoRepository: Configured repository implementation.
+    """
     return TodoRepositoryImpl(session)

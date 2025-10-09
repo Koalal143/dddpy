@@ -1,4 +1,4 @@
-"""Main application entry point for the API."""
+"""Bootstrap the FastAPI application and configure infrastructure."""
 
 import logging
 from contextlib import asynccontextmanager
@@ -17,7 +17,14 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize database tables on startup and cleanup on shutdown."""
+    """Manage database setup and teardown for the FastAPI lifespan.
+
+    Args:
+        app: FastAPI application instance invoking the lifespan context.
+
+    Yields:
+        None: Control is yielded back to FastAPI after setup completes.
+    """
     create_tables()
     yield
     engine.dispose()

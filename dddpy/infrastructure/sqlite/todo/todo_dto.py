@@ -1,4 +1,4 @@
-"""Data Transfer Object for Todo entity in SQLite database."""
+"""Map todo entities to and from SQLite persistence models."""
 
 from datetime import datetime, timezone
 from uuid import UUID
@@ -17,7 +17,7 @@ from dddpy.infrastructure.sqlite.database import Base
 
 
 class TodoDTO(Base):
-    """Data Transfer Object for Todo entity in SQLite database."""
+    """Represent the SQLite persistence model for todos."""
 
     __tablename__ = 'todo'
     id: Mapped[UUID] = mapped_column(primary_key=True, autoincrement=False)
@@ -29,11 +29,15 @@ class TodoDTO(Base):
     completed_at: Mapped[int] = mapped_column(index=True, nullable=True)
 
     def to_entity(self) -> Todo:
-        """Convert DTO to domain entity."""
+        """Convert the DTO into a domain entity.
+
+        Returns:
+            Todo: Domain entity reconstructed from persisted values.
+        """
         return Todo(
             TodoId(self.id),
             TodoTitle(self.title),
-            TodoDescription(self.description),
+            TodoDescription(self.description) if self.description else None,
             TodoStatus(self.status),
             datetime.fromtimestamp(self.created_at / 1000, tz=timezone.utc),
             datetime.fromtimestamp(self.updated_at / 1000, tz=timezone.utc),
@@ -44,7 +48,14 @@ class TodoDTO(Base):
 
     @staticmethod
     def from_entity(todo: Todo) -> 'TodoDTO':
-        """Convert domain entity to DTO."""
+        """Create a DTO from a domain entity.
+
+        Args:
+            todo: Domain entity to convert.
+
+        Returns:
+            TodoDTO: DTO populated for persistence.
+        """
         return TodoDTO(
             id=todo.id.value,
             title=todo.title.value,
