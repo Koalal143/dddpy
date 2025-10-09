@@ -22,7 +22,7 @@
   - Types: `fix`, `feat`, `chore`, `doc`, `refactor`, `test`
   - Add a scope when relevant, e.g., `fix(admin): ...`
 - Split commits by scope if multiple files change; keep unrelated changes (e.g., README vs features) in separate commits.
-- Always run `make format` and `make test` before creating a commit.
+- Always run `make format` and `make test` before creating a commit to keep CI green.
 
 ## 3. Documentation Comments
 
