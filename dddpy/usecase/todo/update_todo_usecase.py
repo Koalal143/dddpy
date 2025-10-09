@@ -1,4 +1,4 @@
-"""This module provides use case for updating a Todo entity."""
+"""Provide use case implementations for updating todos."""
 
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -10,7 +10,7 @@ from dddpy.domain.todo.value_objects import TodoDescription, TodoId, TodoTitle
 
 
 class UpdateTodoUseCase(ABC):
-    """UpdateTodoUseCase defines an interface for updating a Todo."""
+    """Define the application boundary for updating todos."""
 
     @abstractmethod
     def execute(
@@ -19,13 +19,27 @@ class UpdateTodoUseCase(ABC):
         title: Optional[TodoTitle] = None,
         description: Optional[TodoDescription] = None,
     ) -> Todo:
-        """execute updates a Todo."""
+        """Update a todo using the provided values.
+
+        Args:
+            todo_id: Identifier of the todo to update.
+            title: Optional replacement title.
+            description: Optional replacement description.
+
+        Returns:
+            Todo: Updated todo entity.
+        """
 
 
 class UpdateTodoUseCaseImpl(UpdateTodoUseCase):
-    """UpdateTodoUseCaseImpl implements the use case for updating a Todo."""
+    """Concrete todo update use case backed by a repository."""
 
     def __init__(self, todo_repository: TodoRepository):
+        """Store the repository dependency.
+
+        Args:
+            todo_repository: Repository used to persist todo updates.
+        """
         self.todo_repository = todo_repository
 
     def execute(
@@ -34,7 +48,19 @@ class UpdateTodoUseCaseImpl(UpdateTodoUseCase):
         title: Optional[TodoTitle] = None,
         description: Optional[TodoDescription] = None,
     ) -> Todo:
-        """execute updates a Todo."""
+        """Update a todo and persist the changes.
+
+        Args:
+            todo_id: Identifier of the todo to update.
+            title: Optional replacement title.
+            description: Optional replacement description.
+
+        Raises:
+            TodoNotFoundError: If no todo matches the provided identifier.
+
+        Returns:
+            Todo: Persisted todo reflecting the latest updates.
+        """
         todo = self.todo_repository.find_by_id(todo_id)
 
         if todo is None:
@@ -50,5 +76,12 @@ class UpdateTodoUseCaseImpl(UpdateTodoUseCase):
 
 
 def new_update_todo_usecase(todo_repository: TodoRepository) -> UpdateTodoUseCase:
-    """Create a new instance of UpdateTodoUseCase."""
+    """Instantiate the todo update use case.
+
+    Args:
+        todo_repository: Repository used to persist todo updates.
+
+    Returns:
+        UpdateTodoUseCase: Configured use case implementation.
+    """
     return UpdateTodoUseCaseImpl(todo_repository)

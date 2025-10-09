@@ -1,4 +1,4 @@
-"""This module provides use case for finding all Todo entities."""
+"""Provide use case implementations for listing todos."""
 
 from abc import ABC, abstractmethod
 from typing import List
@@ -8,24 +8,40 @@ from dddpy.domain.todo.repositories import TodoRepository
 
 
 class FindTodosUseCase(ABC):
-    """FindTodosUseCase defines a use case interface for finding all Todos."""
+    """Define the application boundary for listing todos."""
 
     @abstractmethod
     def execute(self) -> List[Todo]:
-        """execute finds all Todos."""
+        """Return the collection of todos managed by the system.
+
+        Returns:
+            List[Todo]: All persisted todo entities.
+        """
 
 
 class FindTodosUseCaseImpl(FindTodosUseCase):
-    """FindTodosUseCaseImpl implements the use case for finding all Todos."""
+    """Concrete todo listing use case backed by a repository."""
 
     def __init__(self, todo_repository: TodoRepository):
+        """Store the repository dependency.
+
+        Args:
+            todo_repository: Repository used to retrieve todos.
+        """
         self.todo_repository = todo_repository
 
     def execute(self) -> List[Todo]:
-        """execute finds all Todos."""
+        """Return all todos ordered per repository implementation."""
         return self.todo_repository.find_all()
 
 
 def new_find_todos_usecase(todo_repository: TodoRepository) -> FindTodosUseCase:
-    """Create a new instance of FindTodosUseCase."""
+    """Instantiate the todo listing use case.
+
+    Args:
+        todo_repository: Repository used to retrieve todos.
+
+    Returns:
+        FindTodosUseCase: Configured use case implementation.
+    """
     return FindTodosUseCaseImpl(todo_repository)

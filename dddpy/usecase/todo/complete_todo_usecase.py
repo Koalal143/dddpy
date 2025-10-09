@@ -1,4 +1,4 @@
-"""This module provides use case for completing a Todo entity."""
+"""Provide use case implementations for completing todos."""
 
 from abc import ABC, abstractmethod
 
@@ -13,21 +13,45 @@ from dddpy.domain.todo.value_objects import TodoId, TodoStatus
 
 
 class CompleteTodoUseCase(ABC):
-    """CompleteTodoUseCase defines an interface for completing a Todo."""
+    """Define the application boundary for completing todos."""
 
     @abstractmethod
     def execute(self, todo_id: TodoId) -> Todo:
-        """execute completes a Todo."""
+        """Complete a todo identified by the provided ID.
+
+        Args:
+            todo_id: Identifier of the todo to complete.
+
+        Returns:
+            Todo: Updated todo entity marked as completed.
+        """
 
 
 class CompleteTodoUseCaseImpl(CompleteTodoUseCase):
-    """CompleteTodoUseCaseImpl implements the use case for completing a Todo."""
+    """Concrete todo completion use case backed by a repository."""
 
     def __init__(self, todo_repository: TodoRepository):
+        """Store the repository dependency.
+
+        Args:
+            todo_repository: Repository used to persist todo updates.
+        """
         self.todo_repository = todo_repository
 
     def execute(self, todo_id: TodoId) -> Todo:
-        """execute completes a Todo."""
+        """Complete a todo after validating its lifecycle state.
+
+        Args:
+            todo_id: Identifier of the todo to complete.
+
+        Raises:
+            TodoNotFoundError: If the todo cannot be located.
+            TodoNotStartedError: If the todo has not been started yet.
+            TodoAlreadyCompletedError: If the todo is already completed.
+
+        Returns:
+            Todo: Persisted todo marked as completed.
+        """
         todo = self.todo_repository.find_by_id(todo_id)
 
         if todo is None:
@@ -45,5 +69,12 @@ class CompleteTodoUseCaseImpl(CompleteTodoUseCase):
 
 
 def new_complete_todo_usecase(todo_repository: TodoRepository) -> CompleteTodoUseCase:
-    """Create a new instance of CompleteTodoUseCase."""
+    """Instantiate the todo completion use case.
+
+    Args:
+        todo_repository: Repository used to persist todo updates.
+
+    Returns:
+        CompleteTodoUseCase: Configured use case implementation.
+    """
     return CompleteTodoUseCaseImpl(todo_repository)

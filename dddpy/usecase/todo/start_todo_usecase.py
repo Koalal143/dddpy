@@ -1,4 +1,4 @@
-"""This module provides use case for starting a Todo entity."""
+"""Provide use case implementations for starting todos."""
 
 from abc import ABC, abstractmethod
 
@@ -13,21 +13,45 @@ from dddpy.domain.todo.value_objects import TodoId, TodoStatus
 
 
 class StartTodoUseCase(ABC):
-    """StartTodoUseCase defines an interface for starting a Todo."""
+    """Define the application boundary for starting todos."""
 
     @abstractmethod
     def execute(self, todo_id: TodoId) -> Todo:
-        """execute starts a Todo."""
+        """Start a todo identified by the provided ID.
+
+        Args:
+            todo_id: Identifier of the todo to start.
+
+        Returns:
+            Todo: Updated todo entity in progress.
+        """
 
 
 class StartTodoUseCaseImpl(StartTodoUseCase):
-    """StartTodoUseCaseImpl implements the use case for starting a Todo."""
+    """Concrete todo start use case backed by a repository."""
 
     def __init__(self, todo_repository: TodoRepository):
+        """Store the repository dependency.
+
+        Args:
+            todo_repository: Repository used to persist todo updates.
+        """
         self.todo_repository = todo_repository
 
     def execute(self, todo_id: TodoId) -> Todo:
-        """execute starts a Todo."""
+        """Start a todo after validating its current lifecycle state.
+
+        Args:
+            todo_id: Identifier of the todo to start.
+
+        Raises:
+            TodoNotFoundError: If the todo cannot be located.
+            TodoAlreadyCompletedError: If the todo is already completed.
+            TodoAlreadyStartedError: If the todo is already in progress.
+
+        Returns:
+            Todo: Persisted todo marked as in progress.
+        """
         todo = self.todo_repository.find_by_id(todo_id)
 
         if todo is None:
@@ -45,5 +69,12 @@ class StartTodoUseCaseImpl(StartTodoUseCase):
 
 
 def new_start_todo_usecase(todo_repository: TodoRepository) -> StartTodoUseCase:
-    """Create a new instance of StartTodoUseCase."""
+    """Instantiate the todo start use case.
+
+    Args:
+        todo_repository: Repository used to persist todo updates.
+
+    Returns:
+        StartTodoUseCase: Configured use case implementation.
+    """
     return StartTodoUseCaseImpl(todo_repository)

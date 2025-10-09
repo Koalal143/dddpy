@@ -1,4 +1,4 @@
-"""This module provides use case for finding a Todo entity by its ID."""
+"""Provide use case implementations for retrieving todos by ID."""
 
 from abc import ABC, abstractmethod
 
@@ -9,21 +9,43 @@ from dddpy.domain.todo.value_objects import TodoId
 
 
 class FindTodoByIdUseCase(ABC):
-    """FindTodoByIdUseCase defines a use case interface for finding a Todo by its ID."""
+    """Define the application boundary for retrieving a todo by ID."""
 
     @abstractmethod
     def execute(self, todo_id: TodoId) -> Todo:
-        """execute finds a Todo by its ID."""
+        """Return the todo matching the provided identifier.
+
+        Args:
+            todo_id: Identifier of the todo to retrieve.
+
+        Returns:
+            Todo: Todo entity matching the identifier.
+        """
 
 
 class FindTodoByIdUseCaseImpl(FindTodoByIdUseCase):
-    """FindTodoByIdUseCaseImpl implements the use case for finding a Todo by its ID."""
+    """Concrete todo lookup use case backed by a repository."""
 
     def __init__(self, todo_repository: TodoRepository):
+        """Store the repository dependency.
+
+        Args:
+            todo_repository: Repository used to retrieve todos.
+        """
         self.todo_repository = todo_repository
 
     def execute(self, todo_id: TodoId) -> Todo:
-        """execute finds a Todo by its ID."""
+        """Retrieve a todo by identifier or raise if absent.
+
+        Args:
+            todo_id: Identifier of the todo to retrieve.
+
+        Raises:
+            TodoNotFoundError: If the todo cannot be located.
+
+        Returns:
+            Todo: Matching todo entity.
+        """
         todo = self.todo_repository.find_by_id(todo_id)
         if todo is None:
             raise TodoNotFoundError
@@ -31,5 +53,12 @@ class FindTodoByIdUseCaseImpl(FindTodoByIdUseCase):
 
 
 def new_find_todo_by_id_usecase(todo_repository: TodoRepository) -> FindTodoByIdUseCase:
-    """Create a new instance of FindTodoByIdUseCase."""
+    """Instantiate the todo lookup by ID use case.
+
+    Args:
+        todo_repository: Repository used to retrieve todos.
+
+    Returns:
+        FindTodoByIdUseCase: Configured use case implementation.
+    """
     return FindTodoByIdUseCaseImpl(todo_repository)

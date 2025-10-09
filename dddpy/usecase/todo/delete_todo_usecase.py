@@ -1,4 +1,4 @@
-"""This module provides use case for deleting a Todo entity."""
+"""Provide use case implementations for deleting todos."""
 
 from abc import ABC, abstractmethod
 
@@ -8,21 +8,37 @@ from dddpy.domain.todo.value_objects import TodoId
 
 
 class DeleteTodoUseCase(ABC):
-    """DeleteTodoUseCase defines an interface for deleting a Todo."""
+    """Define the application boundary for deleting todos."""
 
     @abstractmethod
     def execute(self, todo_id: TodoId) -> None:
-        """execute deletes a Todo by its ID."""
+        """Delete a todo identified by the provided ID.
+
+        Args:
+            todo_id: Identifier of the todo to delete.
+        """
 
 
 class DeleteTodoUseCaseImpl(DeleteTodoUseCase):
-    """DeleteTodoUseCaseImpl implements the use case for deleting a Todo."""
+    """Concrete todo deletion use case backed by a repository."""
 
     def __init__(self, todo_repository: TodoRepository):
+        """Store the repository dependency.
+
+        Args:
+            todo_repository: Repository responsible for todo persistence.
+        """
         self.todo_repository = todo_repository
 
     def execute(self, todo_id: TodoId) -> None:
-        """execute deletes a Todo by its ID."""
+        """Delete a todo after ensuring it exists.
+
+        Args:
+            todo_id: Identifier of the todo to delete.
+
+        Raises:
+            TodoNotFoundError: If no todo matches the provided identifier.
+        """
         todo = self.todo_repository.find_by_id(todo_id)
 
         if todo is None:
@@ -32,5 +48,12 @@ class DeleteTodoUseCaseImpl(DeleteTodoUseCase):
 
 
 def new_delete_todo_usecase(todo_repository: TodoRepository) -> DeleteTodoUseCase:
-    """Create a new instance of DeleteTodoUseCase."""
+    """Instantiate the todo deletion use case.
+
+    Args:
+        todo_repository: Repository responsible for todo persistence.
+
+    Returns:
+        DeleteTodoUseCase: Configured use case implementation.
+    """
     return DeleteTodoUseCaseImpl(todo_repository)
