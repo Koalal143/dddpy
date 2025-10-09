@@ -1,25 +1,28 @@
-name: Test suite
+name: A workflow to run tests
 
 on: [push, pull_request]
 
 jobs:
   test:
-    name: Python ${{ matrix.python-version }}
+    name: Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.13"]
+        python-version: [3.13]
     steps:
       - uses: actions/checkout@v5
-      - name: Set up Python ${{ matrix.python-version }}
+        with:
+          ref: ${{ github.ref }}
+      - name: Use Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: make install
+        run: |
+          make install
       - name: Run tests
-        run: make test
+        run: |
+          make test
