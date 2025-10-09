@@ -1,10 +1,10 @@
-"""Create model for Todo entities in the application."""
+"""Define request schema for creating todos."""
 
 from pydantic import BaseModel, Field
 
 
 class TodoCreateSchema(BaseModel):
-    """TodoCreateSchema represents data structure as a create model."""
+    """Validate the payload for creating a todo."""
 
     title: str = Field(min_length=1, max_length=100, examples=['Complete the project'])
     description: str | None = Field(

@@ -1,4 +1,4 @@
-"""Query model for Todo entities in the application."""
+"""Expose read-side schemas for todo resources."""
 
 from pydantic import BaseModel, Field
 
@@ -6,7 +6,7 @@ from dddpy.domain.todo.entities import Todo
 
 
 class TodoSchema(BaseModel):
-    """TodoQueryModel represents data structure as a read model."""
+    """Represent the serialized view of a todo returned to clients."""
 
     id: str = Field(examples=['123e4567-e89b-12d3-a456-426614174000'])
     title: str = Field(examples=['Complete the project'])
@@ -17,13 +17,20 @@ class TodoSchema(BaseModel):
     completed_at: int | None = Field(examples=[1136214245000])
 
     class Config:
-        """Configuration for Pydantic model."""
+        """Configure ORM compatibility for the schema."""
 
         from_attributes = True
 
     @staticmethod
     def from_entity(todo: Todo) -> 'TodoSchema':
-        """Convert a Todo entity to a TodoQueryModel."""
+        """Build a schema instance from a domain entity.
+
+        Args:
+            todo: Domain entity to convert.
+
+        Returns:
+            TodoSchema: Pydantic model ready for serialization.
+        """
         return TodoSchema(
             id=str(todo.id.value),
             title=todo.title.value if todo.title else '',

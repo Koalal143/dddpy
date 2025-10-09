@@ -36,10 +36,14 @@ from dddpy.usecase.todo import (
 
 
 class TodoApiRouteHandler:
-    """Handler class for handling Todo-related HTTP endpoints."""
+    """Register HTTP endpoints that expose todo use cases."""
 
     def register_routes(self, app: FastAPI):
-        """Register Todo-related routes to the FastAPI application."""
+        """Attach todo routes to the provided FastAPI application.
+
+        Args:
+            app: FastAPI instance that receives the todo routes.
+        """
 
         @app.get(
             '/todos',
@@ -49,6 +53,17 @@ class TodoApiRouteHandler:
         def get_todos(
             usecase: FindTodosUseCase = Depends(get_find_todos_usecase),
         ):
+            """Return the latest todos.
+
+            Args:
+                usecase: Use case responsible for retrieving todos.
+
+            Returns:
+                List[TodoSchema]: Serialized todos returned to the client.
+
+            Raises:
+                HTTPException: When the use case raises an unexpected error.
+            """
             try:
                 data = usecase.execute()
                 return [TodoSchema.from_entity(todo) for todo in data]
@@ -71,6 +86,18 @@ class TodoApiRouteHandler:
             todo_id: UUID,
             usecase: FindTodoByIdUseCase = Depends(get_find_todo_by_id_usecase),
         ):
+            """Return a single todo by identifier.
+
+            Args:
+                todo_id: Identifier of the requested todo.
+                usecase: Use case responsible for todo retrieval.
+
+            Returns:
+                TodoSchema: Serialized todo returned to the client.
+
+            Raises:
+                HTTPException: When the todo is missing or an unexpected error occurs.
+            """
             uuid = TodoId(todo_id)
             try:
                 todo = usecase.execute(uuid)
@@ -97,6 +124,18 @@ class TodoApiRouteHandler:
             data: TodoCreateSchema,
             usecase: CreateTodoUseCase = Depends(get_create_todo_usecase),
         ):
+            """Create a todo from the request payload.
+
+            Args:
+                data: Payload containing todo creation fields.
+                usecase: Use case responsible for creating todos.
+
+            Returns:
+                TodoSchema: Serialized todo returned to the client.
+
+            Raises:
+                HTTPException: When validation or use case execution fails.
+            """
             try:
                 title = TodoTitle(data.title)
                 description = (
@@ -132,6 +171,19 @@ class TodoApiRouteHandler:
             data: TodoUpdateSchema,
             usecase: UpdateTodoUseCase = Depends(get_update_todo_usecase),
         ):
+            """Update a todo identified by the path parameter.
+
+            Args:
+                todo_id: Identifier of the todo to update.
+                data: Payload containing fields to update.
+                usecase: Use case responsible for updating todos.
+
+            Returns:
+                TodoSchema: Serialized todo returned to the client.
+
+            Raises:
+                HTTPException: When validation fails or the todo cannot be updated.
+            """
             _id = TodoId(todo_id)
 
             try:
@@ -173,6 +225,18 @@ class TodoApiRouteHandler:
             todo_id: UUID,
             usecase: StartTodoUseCase = Depends(get_start_todo_usecase),
         ):
+            """Start a todo via the corresponding use case.
+
+            Args:
+                todo_id: Identifier of the todo to start.
+                usecase: Use case responsible for starting todos.
+
+            Returns:
+                TodoSchema: Serialized todo returned to the client.
+
+            Raises:
+                HTTPException: When lifecycle rules prevent the transition.
+            """
             _id = TodoId(todo_id)
             try:
                 todo = usecase.execute(_id)
@@ -207,6 +271,18 @@ class TodoApiRouteHandler:
             todo_id: UUID,
             usecase: CompleteTodoUseCase = Depends(get_complete_todo_usecase),
         ):
+            """Complete a todo via the corresponding use case.
+
+            Args:
+                todo_id: Identifier of the todo to complete.
+                usecase: Use case responsible for completing todos.
+
+            Returns:
+                TodoSchema: Serialized todo returned to the client.
+
+            Raises:
+                HTTPException: When lifecycle rules prevent completion.
+            """
             _id = TodoId(todo_id)
             try:
                 todo = usecase.execute(_id)

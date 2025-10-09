@@ -1,10 +1,10 @@
-"""Update model for Todo entities in the application."""
+"""Define request schema for updating todos."""
 
 from pydantic import BaseModel, Field
 
 
 class TodoUpdateSchema(BaseModel):
-    """TodoUpdateScheme represents data structure as an update model."""
+    """Validate the payload for updating a todo."""
 
     title: str = Field(min_length=1, max_length=100, examples=['Complete the project'])
     description: str | None = Field(

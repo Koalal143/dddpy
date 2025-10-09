@@ -1,4 +1,4 @@
-"""Error message model for when a Todo item is not found."""
+"""Expose the error schema returned when a todo is missing."""
 
 from pydantic import BaseModel, Field
 
@@ -6,6 +6,6 @@ from dddpy.domain.todo.exceptions import TodoNotFoundError
 
 
 class ErrorMessageTodoNotFound(BaseModel):
-    """Error message model for when a Todo item is not found."""
+    """Represent the not-found error response payload."""
 
     detail: str = Field(examples=[TodoNotFoundError.message])
